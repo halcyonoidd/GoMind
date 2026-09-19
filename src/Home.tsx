@@ -11,7 +11,7 @@ export default function Home() {
   const [past, setPast] = useState<Position[]>([])
   const [policy, setPolicy] = useState<PolicyNet>()
   const [human, setHuman] = useState<Color>(1)
-  const [difficulty, setDifficulty] = useState<Difficulty>('Baby')
+  const [difficulty, setDifficulty] = useState<Difficulty>('Human')
   const [thinking, setThinking] = useState(false)
   useEffect(() => { loadPolicy().then(setPolicy) }, [])
   const noLegalMoves = legalMoves(position).length === 0

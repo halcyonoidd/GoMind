@@ -77,7 +77,9 @@ export class PolicyNet {
       const f = features(position, m), w = this.weights.weights?.[0] ?? [], b = this.weights.bias?.[0] ?? 0
       // Tactical terms are deliberately outside the learned vector so an empty
       // or old policy file still plays sensible 9x9 Go.
-      const tactical = f[59] * 2.4 + f[60] * 1.5 + f[61] * 0.9 + f[62] * 0.32 + f[63] * 0.55 - f[64] * 2.8
+      // Capture is the strongest tactical signal: prefer removing enemy
+      // stones, while still rejecting suicidal moves.
+      const tactical = f[59] * 7 + f[60] * 2.2 + f[61] * 1.2 + f[62] * 0.32 + f[63] * 0.55 - f[64] * 4
       return f.reduce((sum, x, i) => sum + x * (w[i] ?? 0), b) + tactical + (Math.abs((m % 9) - 4) + Math.abs(Math.floor(m / 9) - 4)) * -0.04
     })
     const max = Math.max(...logits), exps = logits.map((x) => Math.exp(x - max)), total = exps.reduce((a, b) => a + b, 0) || 1

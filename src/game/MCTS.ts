@@ -32,7 +32,7 @@ function rollout(position: Position, perspective: 1 | 2, policy: PolicyNet, simu
     const moves = legalMoves(p)
     if (!moves.length) break
     let move: number
-    if (simulation % 24 === 0 && i === 0) {
+    if (simulation % 4 === 0 && i === 0) {
       const priors = policy.priors(p)
       const ranked = moves.slice().sort((a, b) => (priors.get(b) ?? 0) - (priors.get(a) ?? 0))
       // Randomise among the best few to retain rollout diversity.
