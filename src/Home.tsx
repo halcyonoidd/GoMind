@@ -39,9 +39,9 @@ export default function Home() {
   const points = score(position), win = points.black - points.white
   const gameWinner = winner(position)
   const gameStatus = gameFinished
-    ? gameWinner === human ? 'Permainan selesai — Kamu menang!'
-      : gameWinner === 0 ? 'Permainan selesai — Seri'
-        : 'Permainan selesai — GoMind menang'
+    ? gameWinner === human ? 'Game Over — You Win!'
+      : gameWinner === 0 ? 'Game Over — Tie'
+        : 'Game Over — GoMind Wins'
     : thinking ? 'GoMind is thinking…'
       : position.toPlay === human ? 'Your Turn' : 'GoMind\'s Turn'
   return <main className="home">
