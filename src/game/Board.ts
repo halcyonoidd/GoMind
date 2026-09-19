@@ -11,10 +11,18 @@ export const NB: readonly number[][] = Array.from({ length: SIZE * SIZE }, (_, i
     .filter(([y, x]) => y >= 0 && y < SIZE && x >= 0 && x < SIZE).map(([y, x]) => y * SIZE + x)
 })
 
-export type Position = { stones: Int8Array; toPlay: Color; ko: number; consecutivePasses: number; history: Int8Array[]; lastMove?: number }
+export type Position = {
+  stones: Int8Array
+  toPlay: Color
+  ko: number
+  consecutivePasses: number
+  history: Int8Array[]
+  captures: { black: number; white: number }
+  lastMove?: number
+}
 
 export function initialPosition(): Position {
-  return { stones: new Int8Array(SIZE * SIZE), toPlay: 1, ko: -1, consecutivePasses: 0, history: [] }
+  return { stones: new Int8Array(SIZE * SIZE), toPlay: 1, ko: -1, consecutivePasses: 0, history: [], captures: { black: 0, white: 0 } }
 }
 
 function group(stones: Int8Array, start: number): { stones: number[]; liberties: Set<number> } {
@@ -43,7 +51,18 @@ export function play(position: Position, move: Move): Position | null {
   const own = group(stones, p)
   if (!own.liberties.size) return null
   const ko = captured.length === 1 && own.stones.length === 1 && own.liberties.size === 1 ? captured[0] : -1
-  return { stones, toPlay: opponent, ko, consecutivePasses: 0, history: [...position.history, position.stones.slice()], lastMove: p }
+  return {
+    stones,
+    toPlay: opponent,
+    ko,
+    consecutivePasses: 0,
+    history: [...position.history, position.stones.slice()],
+    captures: {
+      black: position.captures.black + (position.toPlay === 1 ? captured.length : 0),
+      white: position.captures.white + (position.toPlay === 2 ? captured.length : 0),
+    },
+    lastMove: p,
+  }
 }
 
 export function legalMoves(position: Position): number[] {

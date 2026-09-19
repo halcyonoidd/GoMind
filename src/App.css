@@ -71,6 +71,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   padding: 4.8%;
 }
 .board line { stroke: #5b3a20; stroke-width: 2; }
+.coordinate { fill: #5b3a20; font-size: 18px; font-weight: 700; pointer-events: none; }
 .board g[role="gridcell"] { cursor: pointer; }
 .hit-area { fill: transparent; }
 .board g[role="gridcell"]:hover .hit-area { fill: #f9731644; }
@@ -79,7 +80,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .stone.white { fill: #f8fafc; stroke: #cbd5e1; }
 .last-move { fill: #f97316; stroke: #fff7ed; stroke-width: 3; }
 .board-footer { justify-content: flex-start; padding-top: 12px; }
-.score { margin-left: auto; }
+.score { margin-left: auto; text-align: right; line-height: 1.6; }
 
 .info-card h2 { margin: 8px 0 20px; }
 .info-card label { display: block; margin: 14px 0; }

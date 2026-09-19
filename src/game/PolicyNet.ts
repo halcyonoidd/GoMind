@@ -19,6 +19,7 @@ export function features(position: Position, move: number): Float32Array {
 export class PolicyNet {
   private weights: Weights
   constructor(weights: Weights = {}) { this.weights = weights }
+  getWeights(): Weights { return this.weights }
   priors(position: Position): Map<number, number> {
     const moves = legalMoves(position), logits = moves.map((m) => {
       const f = features(position, m), w = this.weights.weights?.[0] ?? [], b = this.weights.bias?.[0] ?? 0
