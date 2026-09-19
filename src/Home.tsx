@@ -26,14 +26,10 @@ export default function Home() {
   const undo = () => { const previous = past[past.length - 1]; if (previous) { setPast(past.slice(0, -1)); setPosition(previous) } }
   const reset = () => { setPast([]); setPosition(initialPosition()) }
   const points = score(position), win = points.black - points.white
-  const humanScore = human === 1 ? points.black : points.white
-  const aiScore = human === 1 ? points.white : points.black
   const gameStatus = isOver(position)
     ? winner(position) === human ? 'Kamu menang!' : winner(position) === 0 ? 'Permainan seri' : 'GoMind menang'
-    : humanScore > aiScore ? 'Kamu menang!'
-      : humanScore < aiScore ? 'GoMind menang'
-        : thinking ? 'Thinking…'
-          : position.toPlay === human ? 'Your turn' : 'GoMind'
+    : thinking ? 'GoMind berpikir…'
+      : position.toPlay === human ? 'Giliran kamu' : 'Giliran GoMind'
   return <main className="home">
     <header className="topbar"><div className="brand"><span className="brand-mark">✦</span>GoMind</div><span className="tag">9 × 9 • GO AI</span><button className="ghost" onClick={reset}>New Game</button></header>
     <section className="hero-copy"><p className="eyebrow">A quiet board. A curious machine.</p><h1>Find your <em>liberties.</em></h1><p className="lede">A browser-native Go opponent using engineered policy features and PUCT search. Capture stones, protect your groups, and score territory.</p></section>
