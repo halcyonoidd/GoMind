@@ -3,7 +3,7 @@ import { initialPosition, isOver, legalMoves, play, score, SIZE, winner, type Co
 import { loadPolicy, PolicyNet } from './game/PolicyNet'
 import './App.css'
 
-const SIMS = { Baby: 500, Human: 1500, Einstein: 4000, Monster: 10000 }
+const SIMS = { Baby: 500, Human: 1500, Einstein: 5000, Monster: 10000 }
 type Difficulty = keyof typeof SIMS
 
 export default function Home() {
@@ -45,7 +45,7 @@ export default function Home() {
     : thinking ? 'GoMind is thinking…'
       : position.toPlay === human ? 'Your Turn' : 'GoMind\'s Turn'
   return <main className="home">
-    <header className="topbar"><div className="brand"><span className="brand-mark"></span>GoMind</div><span className="tag">9 × 9 • GO AI</span><button className="ghost" onClick={reset}>New Game</button></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark"></span>GoMind</div><span className="tag">9 × 9 • GO ML</span><button className="ghost" onClick={reset}>New Game</button></header>
     <section className="hero-copy"></section>
     <section className="game-layout"><div className="board-wrap">
       <div className="board-title"><span>YOU PLAY <b>{human === 1 ? 'BLACK' : 'WHITE'}</b></span><span className="status">{gameStatus}</span></div>
