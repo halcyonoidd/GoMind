@@ -3,7 +3,7 @@ import { initialPosition, isOver, legalMoves, play, score, SIZE, winner, type Co
 import { loadPolicy, PolicyNet } from './game/PolicyNet'
 import './App.css'
 
-const SIMS = { Baby: 500, Human: 1500, Einstein: 3000, Monster: 6000 }
+const SIMS = { Baby: 500, Human: 1500, Einstein: 4000, Monster: 10000 }
 type Difficulty = keyof typeof SIMS
 
 export default function Home() {
