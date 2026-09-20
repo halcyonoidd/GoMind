@@ -20,10 +20,10 @@ export default function Home() {
     if (!policy || gameFinished || position.toPlay === human) return
     setThinking(true)
     const worker = new Worker(new URL('./game/mcts.worker.ts', import.meta.url), { type: 'module' })
-    worker.onmessage = (event: MessageEvent<number | undefined>) => {
+    worker.onmessage = (event: MessageEvent<number | 'pass' | undefined>) => {
       if (event.data !== undefined) {
         setPast((p) => [...p, position])
-        setPosition((current) => play(current, { index: event.data! }) ?? current)
+        setPosition((current) => play(current, event.data === 'pass' ? { pass: true } : { index: event.data! }) ?? current)
       }
       setThinking(false)
       worker.terminate()

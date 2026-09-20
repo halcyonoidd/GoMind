@@ -1,20 +1,34 @@
 import { isOver, legalMoves, play, score, type Position } from './Board'
 import { PolicyNet } from './PolicyNet'
-type Node = { position: Position; parent?: Node; move?: number; prior: number; visits: number; value: number; children: Node[] }
-// Search Algorithm: Select/Expand/Rollout/Backprop with PUCT C=1.4.
-export function chooseMove(rootPosition: Position, policy: PolicyNet, simulations: number): number | undefined {
+type Action = number | 'pass'
+type Node = { position: Position; parent?: Node; move?: Action; prior: number; visits: number; value: number; children: Node[] }
+
+// Values are stored from the perspective of the player to move at each node.
+// This makes the negation in PUCT and backpropagation explicit and consistent.
+export function chooseMove(rootPosition: Position, policy: PolicyNet, simulations: number): Action | undefined {
   const root: Node = { position: rootPosition, prior: 1, visits: 0, value: 0, children: [] }
   for (let i = 0; i < simulations; i++) {
     let n = root
-    while (n.children.length && !isOver(n.position)) n = select(n)
-    if (!isOver(n.position)) expand(n, policy)
-    // A newly expanded node is evaluated from one of its children. Cycling
-    // through children avoids giving the first legal move a rollout bias.
-    const child = n.children.length ? n.children[i % n.children.length] : undefined
-    const result = rollout(child?.position ?? n.position, rootPosition.toPlay, policy, i)
-    for (let x: Node | undefined = n; x; x = x.parent) { x.visits++; x.value += result }
+    const path: Node[] = [root]
+    while (n.children.length && !isOver(n.position)) {
+      n = select(n)
+      path.push(n)
+    }
+    if (!isOver(n.position)) {
+      expand(n, policy)
+      if (n.children.length) {
+        n = n.children[i % n.children.length]
+        path.push(n)
+      }
+    }
+    const result = rollout(n.position, rootPosition.toPlay, policy, i)
+    for (const node of path) {
+      node.visits++
+      node.value += node.position.toPlay === rootPosition.toPlay ? result : -result
+    }
   }
-  return root.children.sort((a, b) => b.visits - a.visits)[0]?.move
+  return root.children
+    .sort((a, b) => b.visits - a.visits || b.value - a.value)[0]?.move
 }
 function select(n: Node): Node {
   return n.children.reduce((a, b) => {
@@ -23,14 +37,23 @@ function select(n: Node): Node {
     return av > bv ? a : b
   })
 }
-function expand(n: Node, policy: PolicyNet) { const p = policy.priors(n.position); n.children = legalMoves(n.position).map((m) => ({ position: play(n.position, { index: m })!, parent: n, move: m, prior: p.get(m) ?? 0, visits: 0, value: 0, children: [] })) }
+
+function expand(n: Node, policy: PolicyNet) {
+  const p = policy.priors(n.position)
+  const moves = legalMoves(n.position)
+  n.children = [
+    ...moves.map((m) => ({ position: play(n.position, { index: m })!, parent: n, move: m as Action, prior: p.get(m) ?? 0, visits: 0, value: 0, children: [] })),
+    { position: play(n.position, { pass: true })!, parent: n, move: 'pass' as Action, prior: 0.005, visits: 0, value: 0, children: [] },
+  ]
+}
+
 // Lightly guided rollout: use policy occasionally (rather than every ply) and
 // otherwise sample a small set, keeping the 10k-simulation difficulty usable.
 function rollout(position: Position, perspective: 1 | 2, policy: PolicyNet, simulation: number): number {
   let p = position
   for (let i = 0; i < 28 && !isOver(p); i++) {
     const moves = legalMoves(p)
-    if (!moves.length) break
+    if (!moves.length) { p = play(p, { pass: true })!; continue }
     let move: number
     if (simulation % 4 === 0 && i === 0) {
       const priors = policy.priors(p)
