@@ -1,32 +1,44 @@
-# React + TypeScript + Vite
+# GoMind
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+GoMind is a browser-based 9×9 Go player. The rules engine is in
+`src/game/Board.ts`; the UI sends positions to a worker so MCTS does not block
+the page.
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+`PolicyNet` evaluates each legal move from 80 engineered board/move features.
+The checked-in `public/policy9.json` is a small dense MLP (80 → 32 ReLU → 1
+logit). Logits are softmaxed over legal moves and used as priors by
+AlphaZero-style PUCT. The root mixes those priors with Dirichlet-like
+exploration noise. Rollouts remain deliberately lightweight so the four UI
+difficulty levels are usable in a browser.
 
-## React Compiler
+Older policy files containing `weights` and `bias` (a single linear layer) are
+still accepted by `PolicyNet`; replacing the file is therefore optional when
+developing a compatible model.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Development
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
+npm run build
+npm run lint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Training a policy
+
+The dependency-free `scripts/train-policy.mjs` generates short tactical
+self-play games, records the positions and selected moves, trains the same
+80 → 32 → 1 network with SGD, and writes `public/policy9.json`:
+
+```bash
+npm run train:policy
+```
+
+This is an educational bootstrap trainer, not a professional Go engine:
+games use a small tactical rollout policy, there is no value head, symmetry
+augmentation, or strong external-game dataset, and the resulting policy can
+overfit its generated games. For stronger play, increase self-play games and
+training epochs or replace the script with a stronger data source while
+preserving the JSON layer format.

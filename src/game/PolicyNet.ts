@@ -1,6 +1,7 @@
 import { NB, play, legalMoves, type Position } from './Board'
 export const FDIM = 80
-export type Weights = { weights?: number[][]; bias?: number[] }
+export type Layer = { weights: number[][]; bias: number[] }
+export type Weights = { weights?: number[][]; bias?: number[]; layers?: Layer[] }
 
 type MoveAnalysis = {
   next: Position
@@ -74,16 +75,30 @@ export class PolicyNet {
   getWeights(): Weights { return this.weights }
   priors(position: Position): Map<number, number> {
     const moves = legalMoves(position), logits = moves.map((m) => {
-      const f = features(position, m), w = this.weights.weights?.[0] ?? [], b = this.weights.bias?.[0] ?? 0
+      const f = features(position, m)
+      const logitsFromNetwork = this.weights.layers?.length ? mlp(f, this.weights.layers) : null
+      const w = this.weights.weights?.[0] ?? [], b = this.weights.bias?.[0] ?? 0
       // Tactical terms are deliberately outside the learned vector so an empty
       // or old policy file still plays sensible 9x9 Go.
       // Capture is the strongest tactical signal: prefer removing enemy
       // stones, while still rejecting suicidal moves.
       const tactical = f[59] * 7 + f[60] * 2.2 + f[61] * 1.2 + f[62] * 0.32 + f[63] * 0.55 - f[64] * 4
-      return f.reduce((sum, x, i) => sum + x * (w[i] ?? 0), b) + tactical + (Math.abs((m % 9) - 4) + Math.abs(Math.floor(m / 9) - 4)) * -0.04
+      return (logitsFromNetwork ?? f.reduce((sum, x, i) => sum + x * (w[i] ?? 0), b)) + tactical + (Math.abs((m % 9) - 4) + Math.abs(Math.floor(m / 9) - 4)) * -0.04
     })
     const max = Math.max(...logits), exps = logits.map((x) => Math.exp(x - max)), total = exps.reduce((a, b) => a + b, 0) || 1
     return new Map(moves.map((m, i) => [m, exps[i] / total]))
   }
+}
+function mlp(input: Float32Array, layers: Layer[]): number {
+  let values = Array.from(input)
+  for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
+    const layer = layers[layerIndex]
+    values = layer.bias.map((bias, row) => {
+      let value = bias
+      for (let col = 0; col < values.length; col++) value += (layer.weights[row]?.[col] ?? 0) * values[col]
+      return layerIndex === layers.length - 1 ? value : Math.max(0, value)
+    })
+  }
+  return values[0] ?? 0
 }
 export async function loadPolicy(): Promise<PolicyNet> { try { const r = await fetch('/policy9.json'); return new PolicyNet(await r.json()) } catch { return new PolicyNet() } }

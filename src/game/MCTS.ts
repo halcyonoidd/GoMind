@@ -17,7 +17,7 @@ export function chooseMove(rootPosition: Position, policy: PolicyNet, simulation
     if (!isOver(n.position)) {
       expand(n, policy)
       if (n.children.length) {
-        n = n.children[i % n.children.length]
+        n = select(n)
         path.push(n)
       }
     }
@@ -43,8 +43,24 @@ function expand(n: Node, policy: PolicyNet) {
   const moves = legalMoves(n.position)
   n.children = [
     ...moves.map((m) => ({ position: play(n.position, { index: m })!, parent: n, move: m as Action, prior: p.get(m) ?? 0, visits: 0, value: 0, children: [] })),
-    { position: play(n.position, { pass: true })!, parent: n, move: 'pass' as Action, prior: 0.005, visits: 0, value: 0, children: [] },
+    { position: play(n.position, { pass: true })!, parent: n, move: 'pass' as Action, prior: 0.01, visits: 0, value: 0, children: [] },
   ]
+  const total = n.children.reduce((sum, child) => sum + child.prior, 0) || 1
+  for (const child of n.children) child.prior /= total
+  // AlphaZero-style root exploration. Noise is only used to choose the opening
+  // and keeps the browser player's subsequent searches deterministic enough.
+  if (!n.parent && n.children.length > 1) {
+    const alpha = 0.3
+    const noise = n.children.map(() => gammaSample(alpha))
+    const noiseTotal = noise.reduce((a, b) => a + b, 0) || 1
+    n.children.forEach((child, i) => { child.prior = child.prior * 0.75 + (noise[i] / noiseTotal) * 0.25 })
+  }
+}
+
+function gammaSample(shape: number): number {
+  let product = 1
+  for (let i = 0; i < Math.ceil(shape); i++) product *= Math.random()
+  return -Math.log(product || Number.MIN_VALUE)
 }
 
 // Lightly guided rollout: use policy occasionally (rather than every ply) and
