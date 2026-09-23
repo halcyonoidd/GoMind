@@ -3,8 +3,6 @@ import { PolicyNet } from './PolicyNet'
 type Action = number | 'pass'
 type Node = { position: Position; parent?: Node; move?: Action; prior: number; visits: number; value: number; children: Node[] }
 
-// Values are stored from the perspective of the player to move at each node.
-// This makes the negation in PUCT and backpropagation explicit and consistent.
 export function chooseMove(rootPosition: Position, policy: PolicyNet, simulations: number): Action | undefined {
   const root: Node = { position: rootPosition, prior: 1, visits: 0, value: 0, children: [] }
   for (let i = 0; i < simulations; i++) {
@@ -47,8 +45,6 @@ function expand(n: Node, policy: PolicyNet) {
   ]
   const total = n.children.reduce((sum, child) => sum + child.prior, 0) || 1
   for (const child of n.children) child.prior /= total
-  // AlphaZero-style root exploration. Noise is only used to choose the opening
-  // and keeps the browser player's subsequent searches deterministic enough.
   if (!n.parent && n.children.length > 1) {
     const alpha = 0.3
     const noise = n.children.map(() => gammaSample(alpha))
@@ -63,8 +59,6 @@ function gammaSample(shape: number): number {
   return -Math.log(product || Number.MIN_VALUE)
 }
 
-// Lightly guided rollout: use policy occasionally (rather than every ply) and
-// otherwise sample a small set, keeping the 10k-simulation difficulty usable.
 function rollout(position: Position, perspective: 1 | 2, policy: PolicyNet, simulation: number): number {
   let p = position
   for (let i = 0; i < 28 && !isOver(p); i++) {
@@ -74,7 +68,6 @@ function rollout(position: Position, perspective: 1 | 2, policy: PolicyNet, simu
     if (simulation % 4 === 0 && i === 0) {
       const priors = policy.priors(p)
       const ranked = moves.slice().sort((a, b) => (priors.get(b) ?? 0) - (priors.get(a) ?? 0))
-      // Randomise among the best few to retain rollout diversity.
       move = ranked[Math.floor(Math.random() * Math.min(5, ranked.length))]
     } else {
       move = moves[Math.floor(Math.random() * moves.length)]

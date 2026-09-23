@@ -1,10 +1,9 @@
 export const SIZE = 9
 export const KOMI = 6.5
-export type Stone = 0 | 1 | 2 // 0 empty, 1 black, 2 white
+export type Stone = 0 | 1 | 2 
 export type Color = 1 | 2
 export type Move = { index: number } | { pass: true }
 
-// Rules engine: fixed neighbour table keeps browser play allocation-free.
 export const NB: readonly number[][] = Array.from({ length: SIZE * SIZE }, (_, i) => {
   const r = Math.floor(i / SIZE), c = i % SIZE
   return [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]

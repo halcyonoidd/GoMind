@@ -43,8 +43,6 @@ function analyzeMove(position: Position, move: number, next = play(position, { i
   return { next, captures, ownLiberties: own.liberties, enemyAtari, ownAtari, connection, selfAtari: captures === 0 && own.liberties <= 1 }
 }
 
-// AI/ML: 80 engineered features. The first 50 remain compatible with policy files;
-// the remaining slots describe tactical shape and move quality.
 export function features(position: Position, move: number): Float32Array {
   const f = new Float32Array(FDIM); const r = Math.floor(move / 9), c = move % 9
   f[0] = r / 8; f[1] = c / 8; f[2] = r === 0 || r === 8 ? 1 : 0; f[3] = c === 0 || c === 8 ? 1 : 0
@@ -78,10 +76,6 @@ export class PolicyNet {
       const f = features(position, m)
       const logitsFromNetwork = this.weights.layers?.length ? mlp(f, this.weights.layers) : null
       const w = this.weights.weights?.[0] ?? [], b = this.weights.bias?.[0] ?? 0
-      // Tactical terms are deliberately outside the learned vector so an empty
-      // or old policy file still plays sensible 9x9 Go.
-      // Capture is the strongest tactical signal: prefer removing enemy
-      // stones, while still rejecting suicidal moves.
       const tactical = f[59] * 7 + f[60] * 2.2 + f[61] * 1.2 + f[62] * 0.32 + f[63] * 0.55 - f[64] * 4
       return (logitsFromNetwork ?? f.reduce((sum, x, i) => sum + x * (w[i] ?? 0), b)) + tactical + (Math.abs((m % 9) - 4) + Math.abs(Math.floor(m / 9) - 4)) * -0.04
     })
